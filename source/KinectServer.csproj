@@ -61,6 +61,7 @@
     <Compile Include="DepthSerializer.cs" />
     <Compile Include="FrameSerializer.cs" />
     <Compile Include="Mode.cs" />
+    <Compile Include="PointCloudSerializer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SkeletonSerializer.cs" />

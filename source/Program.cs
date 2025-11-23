@@ -65,6 +65,12 @@ namespace KinectServer
                         case "Depth":
                             _mode = Mode.Depth;
                             break;
+                        case "PointCloud":
+                            _mode = Mode.PointCloud;
+                            break;
+                        case "RawDepth":
+                            _mode = Mode.RawDepth;
+                            break;
                         default:
                             break;
                     }
@@ -101,6 +107,12 @@ namespace KinectServer
 
         static void Sensor_AllFramesReady(object sender, AllFramesReadyEventArgs e)
         {
+            // Handle PointCloud mode first - need both depth and color frames before disposal
+            if(_mode == Mode.PointCloud)
+            {
+                ProcessPointCloud(e);
+            }
+
             using(var frame = e.OpenColorImageFrame())
             {
                 if(frame != null)
@@ -130,6 +142,18 @@ namespace KinectServer
                             socket.Send(blob);
                         }
                     }
+                    else if(_mode == Mode.RawDepth)
+                    {
+                        string json = DepthRawSerializer.Serialize(frame, _coordinateMapper);
+
+                        if (json != null)
+                        {
+                            foreach(var socket in _clients)
+                            {
+                                socket.Send(json);
+                            }
+                        }
+                    }
                 }
             }
 
@@ -153,5 +177,28 @@ namespace KinectServer
                 }
             }
         }
+
+        static void ProcessPointCloud(AllFramesReadyEventArgs e)
+        {
+            using(var depthFrame = e.OpenDepthImageFrame())
+            {
+                if(depthFrame != null)
+                {
+                    using(var colorFrame = e.OpenColorImageFrame())
+                    {
+                        string pointCloudJson = depthFrame.Serialize(colorFrame, _coordinateMapper);
+
+                        if (pointCloudJson != null)
+                        {
+                            foreach(var socket in _clients)
+                            {
+                                socket.Send(pointCloudJson);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
     }
 }
